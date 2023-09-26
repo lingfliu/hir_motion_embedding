@@ -1,10 +1,11 @@
 import pickle
+import time
 
 from dataloader import BaseLoader
 
 import os
 import numpy as np
-import h5py
+from utils import OrderedPool
 
 DATA_DIR_60 = '60'
 DATA_DIR_120 = '120'
@@ -327,11 +328,34 @@ def frame_format(frames):
         pos_frames, invalid_frames = frame2pos(frames)
         pos_frames = filter_pos_frames(pos_frames, invalid_frames)
 
-        pos_frames = normalize_pos_frames(pos_frames, HIERARCHY)
+        # TODO: to be tested
+        # pos_frames = normalize_pos_frames(pos_frames, HIERARCHY)
 
         pos_frames_map[bid] = pos_frames
 
     return frames_map, pos_frames_map
+
+
+def cache_task(ntu_name, source_path, cache_path):
+    """
+    :param ntu_name:
+    :param source_path:
+    :param cache_path:
+    :return:
+    """
+    tic = time.time()
+    if os.path.exists(cache_path):
+        print('cache exists: ', ntu_name)
+        return cache_path
+    frames = parse_skeleton(source_path)
+    frames_map, pos_frames_map = frame_format(frames)
+
+    with open(os.path.join(cache_path), 'wb+') as f:
+        pickle.dump((frames_map, pos_frames_map), f)
+
+    print('cached: ', ntu_name, 'took {} s'.format(time.time()-tic))
+
+    return cache_path
 
 
 class NtuLoader(BaseLoader):
@@ -391,27 +415,32 @@ class NtuLoader(BaseLoader):
         """
         pass
 
-    def load_data_all(self, meta):
-        for name in meta['mapping'].keys():
-            if self.cache_root_path and os.path.exists(os.path.join(self.cache_root_path,  'data', name+'.data')):
-                # 判断缓存文件是否存在
-                with open(os.path.join(self.cache_root_path,  'data', 'name.data'), 'rb') as f:
-                    pos_frames, frames = pickle.load(f)
-            else:
-                #  读取ntu数据,生成raw_data缓存文件
-                # get_raw_skes_data.get_raw_data_all(self.root_path, meta)
-
-                # 生成denoised_data缓存文件
-                # get_raw_denoised_data.get_raw_denoised_data(self.root_path)
-
-                # 返回ntu数据列表
-                # pos_frames_list = seq_transformation.seq_transformation(self.cache_dir)
-
-                pass
-
-            # folder_list = meta['ntu_names']
-            # return pos_frames_list, folder_list
+    def cache_data_all(self, meta):
+        if not self.cache_root_path:
             return None
+        else:
+            if not os.path.exists(os.path.join(self.cache_root_path, 'data')):
+                os.makedirs(os.path.join(self.cache_root_path, 'data'))
+
+            data_cache_root_path = os.path.join(self.cache_root_path, 'data')
+
+            cnt = 0
+            task_pool = OrderedPool(8, queue_max=6000)
+            for name in meta['mapping'].keys():
+                if cnt > 5000:
+                    task_pool.subscribe()
+                    task_pool.fetch_results()
+                    task_pool.cleanup()
+                    task_pool = OrderedPool(8, queue_max=6000)
+                    cnt = 0
+
+                source_path = meta['mapping'][name][1]
+                cache_path = os.path.join(data_cache_root_path, name+'.data')
+                task_pool.submit(task=cache_task, order=cnt, params=(name, source_path, cache_path,))
+                # cache_task(name, source_path, cache_path)
+                cnt += 1
+
+            return 1
 
     def load_data(self, name, source_path):
         """

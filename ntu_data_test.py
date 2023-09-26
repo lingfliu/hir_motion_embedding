@@ -14,19 +14,18 @@ if __name__ == '__main__':
     meta = loader.load_meta()
 
     '''test code for all motion file'''
-    # parsed_map = loader.load_data_all(meta)
+    result = loader.cache_data_all(meta)
     # for amc_name in parsed_map.keys():
     #     loader.save_data(amc_name, parsed_map[amc_name][0], parsed_map[amc_name][1])
 
     '''test code for single motion file parsing'''
-    cnt = 0
-    for ntu_name in meta['mapping'].keys():
-        source_path = meta['mapping'][ntu_name][1]
-        frams_map, pos_frames_map = loader.load_data(ntu_name, source_path)
-
-        for cmu_name in pos_frames_map.keys():
-            ntu_draw_pos_motion(pos_frames_map[cmu_name], NTU_HIERARCHY)
-            break
+    # for ntu_name in meta['mapping'].keys():
+    #     source_path = meta['mapping'][ntu_name][1]
+    #     frams_map, pos_frames_map = loader.load_data(ntu_name, source_path)
+    #
+    #     for cmu_name in pos_frames_map.keys():
+    #         ntu_draw_pos_motion(pos_frames_map[cmu_name], NTU_HIERARCHY)
+    #         break
         # break
 
 
