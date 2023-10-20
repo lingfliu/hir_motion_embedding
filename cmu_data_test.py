@@ -1,9 +1,6 @@
 import os
 from dataloader import CmuLoader
-from dataviewer import draw_hierarchy, draw_motion, draw_pos_motion
-import matplotlib.pyplot as plt
-import time
-
+from dataviewer import cmu_draw_hierarchy, cmu_draw_pos_motion
 
 if __name__ == '__main__':
     root_path = os.path.join('..','..','data','cmu','all_asfamc','subjects')
@@ -48,4 +45,4 @@ if __name__ == '__main__':
         if loader.cache_root_path:
             _, amc_path, asf_name, asf_path = meta.mapping[amc_name]
             frames, pos_frames = loader.load_data(amc_name, amc_path, meta.hierarchies[asf_name])
-            draw_pos_motion(pos_frames, meta.hierarchies[meta.mapping[amc_name][2]])
+            cmu_draw_pos_motion(pos_frames, meta.hierarchies[meta.mapping[amc_name][2]])
